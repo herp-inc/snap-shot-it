@@ -66,10 +66,14 @@ global.beforeEach(function () {
 
 global.afterEach(clearCurrentTest)
 
-function snapshot (value) {
+function snapshot () {
   if (!currentTest) {
     throw new Error('Missing current test, cannot make snapshot')
   }
+
+  const transCompare = arguments[0];
+  const value = arguments[1];
+  const args = [].slice.call(arguments, 1);
 
   const fullTitle = getTestTitle(currentTest)
   debug('snapshot in test "%s"', fullTitle)
@@ -78,17 +82,17 @@ function snapshot (value) {
   // eslint-disable-next-line immutable/no-let
   let savedTestTitle = fullTitle
 
-  if (isDataDriven(arguments)) {
+  if (isDataDriven(args)) {
     // value is a function
     debug('data-driven test for %s', value.name)
-    value = dataDriven(value, Array.from(arguments).slice(1))
+    value = dataDriven(value, Array.from(args).slice(1))
     savedTestTitle += ' ' + value.name
     debug('extended save name to include function name')
     debug('snapshot name "%s"', savedTestTitle)
     addToPrune(getTestInfo(currentTest))
-  } else if (isNamedSnapshotArguments(arguments)) {
-    savedTestTitle = arguments[0]
-    value = arguments[1]
+  } else if (isNamedSnapshotArguments(args)) {
+    savedTestTitle = args[0]
+    value = args[1]
     debug('named snapshots "%s"', savedTestTitle)
     addToPrune({
       file: currentTest.file,
@@ -110,7 +114,7 @@ function snapshot (value) {
     file: currentTest.file,
     specName: savedTestTitle,
     ext: EXTENSION,
-    compare,
+    compare: transCompare(compare),
     opts
   }
   return core(snap)
